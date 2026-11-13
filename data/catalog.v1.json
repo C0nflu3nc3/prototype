@@ -1,0 +1,29 @@
+{
+  "version": "catalog-v1",
+  "products": [
+    { "id": "WM-01", "name": "Soft Day Cream", "price": 3500, "texture": "medium", "fragrance_free": false, "size_ml": 50, "use_time": "day", "in_stock": true,
+      "limitation": { "en": "Contains fragrance; no SPF.", "kk": "Құрамында хош иіс бар; SPF жоқ." }, "fictional": true },
+    { "id": "WM-02", "name": "Aqua Light Gel", "price": 4900, "texture": "light", "fragrance_free": true, "size_ml": 30, "use_time": "day", "in_stock": true,
+      "limitation": { "en": "No SPF; small 30 ml size.", "kk": "SPF жоқ; көлемі шағын, 30 мл." }, "fictional": true },
+    { "id": "WM-03", "name": "Rich Night Balm", "price": 8900, "texture": "rich", "fragrance_free": true, "size_ml": 50, "use_time": "night", "in_stock": true,
+      "limitation": { "en": "Heavy for daytime use.", "kk": "Күндізгі қолдануға тым ауыр." }, "fictional": true },
+    { "id": "WM-04", "name": "Fresh Citrus Lotion", "price": 2900, "texture": "light", "fragrance_free": false, "size_ml": 100, "use_time": "both", "in_stock": true,
+      "limitation": { "en": "Contains fragrance and citrus oils.", "kk": "Құрамында хош иіс пен цитрус майлары бар." }, "fictional": true },
+    { "id": "WM-05", "name": "Daily Calm Lotion", "price": 5800, "texture": "light", "fragrance_free": true, "size_ml": 75, "use_time": "both", "in_stock": true,
+      "limitation": { "en": "Contains alcohol denat.; may feel drying.", "kk": "Құрамында денатуратталған спирт бар; теріні құрғатуы мүмкін." }, "fictional": true },
+    { "id": "WM-06", "name": "Comfort Cream 50", "price": 7400, "texture": "medium", "fragrance_free": true, "size_ml": 50, "use_time": "both", "in_stock": true,
+      "limitation": { "en": "Jar packaging; above-average price.", "kk": "Банкадағы қаптама; бағасы орташадан жоғары." }, "fictional": true },
+    { "id": "WM-07", "name": "Hydra Mist Gel Mini", "price": 6400, "texture": "light", "fragrance_free": true, "size_ml": 15, "use_time": "day", "in_stock": true,
+      "limitation": { "en": "Very small 15 ml tube; high price per ml.", "kk": "Өте шағын 15 мл түтік; 1 мл бағасы жоғары." }, "fictional": true },
+    { "id": "WM-08", "name": "Overnight Gel Mask", "price": 6900, "texture": "light", "fragrance_free": false, "size_ml": 75, "use_time": "night", "in_stock": true,
+      "limitation": { "en": "Contains fragrance; leaves a thin film until morning.", "kk": "Құрамында хош иіс бар; таңға дейін жұқа қабат қалдырады." }, "fictional": true },
+    { "id": "WM-09", "name": "Barrier Cream Family Pump", "price": 7900, "texture": "medium", "fragrance_free": true, "size_ml": 200, "use_time": "both", "in_stock": true,
+      "limitation": { "en": "Large 200 ml pump bottle; not easy to carry.", "kk": "200 мл үлкен дозаторлы бөтелке; өзіңізбен алып жүруге ыңғайсыз." }, "fictional": true },
+    { "id": "WM-10", "name": "Rose Night Balm", "price": 6200, "texture": "rich", "fragrance_free": false, "size_ml": 50, "use_time": "night", "in_stock": true,
+      "limitation": { "en": "Contains rose fragrance; heavy for daytime use.", "kk": "Құрамында раушан хош иісі бар; күндізгі қолдануға тым ауыр." }, "fictional": true },
+    { "id": "WM-11", "name": "Cocoa Butter Balm Mini", "price": 4138, "texture": "rich", "fragrance_free": false, "size_ml": 30, "use_time": "both", "in_stock": true,
+      "limitation": { "en": "Contains cocoa scent; small 30 ml tin.", "kk": "Құрамында какао иісі бар; 30 мл шағын қалбыр." }, "fictional": true },
+    { "id": "WM-12", "name": "Winter Shea Balm", "price": 9800, "texture": "rich", "fragrance_free": true, "size_ml": 150, "use_time": "both", "in_stock": false,
+      "limitation": { "en": "Highest price in the catalog; very thick.", "kk": "Каталогтағы ең қымбат өнім; өте қою." }, "fictional": true }
+  ]
+}

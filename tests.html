@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WellMatch tests (in-browser)</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="pages.css">
+</head>
+<!-- F20 — developer/examiner tool (English only). Runs the SAME test files as `node tests/run.js`.
+     Cases that need the file system (test.node) are shown as skipped here. -->
+<body class="wm-body">
+  <div class="wm">
+    <main class="pg-wrap pg-main">
+      <h1>WellMatch — in-browser test runner</h1>
+      <p>Runs <code>tests/*.test.js</code> against <code>app.js</code> and the embedded catalog/i18n data. Same files as <code>node tests/run.js</code>.</p>
+      <p class="tr-summary" id="tr-summary" role="status">Running…</p>
+      <p><button type="button" class="wm-btn wm-btn-secondary" id="tr-rerun">Run again</button> <a class="wm-link" href="index.html">Open the app</a></p>
+      <div id="tr-results"></div>
+    </main>
+  </div>
+  <script src="data/embedded.js"></script>
+  <script src="app.js"></script>
+  <script src="tests/harness.js"></script>
+  <script src="tests/matching.test.js"></script>
+  <script src="tests/validate.test.js"></script>
+  <script src="tests/i18n.test.js"></script>
+  <script src="tests/catalog.test.js"></script>
+  <script src="tests/state.test.js"></script>
+  <script src="tests/testlog.test.js"></script>
+  <script src="tests/analytics.test.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+      function run() {
+        const t0 = performance.now();
+        const results = WMTest.runAll({ core: WellMatchCore, data: WELLMATCH_EMBEDDED, node: false });
+        const ms = Math.round(performance.now() - t0);
+        const box = document.getElementById('tr-results');
+        box.replaceChildren();
+        const files = [...new Set(results.map(r => r.file))];
+        for (const f of files) {
+          const sec = el('section', 'tr-file');
+          const rs = results.filter(r => r.file === f);
+          sec.append(el('h2', null, f + ' — ' + rs.filter(r => r.status === 'pass').length + '/' + rs.filter(r => r.status !== 'skip').length));
+          const ul = el('ul');
+          for (const r of rs) {
+            const li = el('li');
+            const mark = r.status === 'pass' ? '✓ ' : r.status === 'fail' ? '✗ ' : '– ';
+            li.append(el('span', 'tr-' + r.status, mark + (r.status === 'skip' ? '[Node only] ' : '')), document.createTextNode(r.name));
+            if (r.message) li.append(el('span', 'tr-msg', r.message));
+            ul.append(li);
+          }
+          sec.append(ul);
+          box.append(sec);
+        }
+        const c = s => results.filter(r => r.status === s).length;
+        const sum = document.getElementById('tr-summary');
+        sum.textContent = c('pass') + ' passed, ' + c('fail') + ' failed, ' + c('skip') + ' skipped (Node only) in ' + ms + ' ms';
+        sum.className = 'tr-summary ' + (c('fail') ? 'tr-fail' : 'tr-pass');
+        document.title = (c('fail') ? '✗ ' : '✓ ') + 'WellMatch tests';
+      }
+      document.getElementById('tr-rerun').addEventListener('click', run);
+      run();
+    })();
+  </script>
+</body>
+</html>
