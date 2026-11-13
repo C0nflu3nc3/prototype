@@ -40,11 +40,13 @@
       assert.strictEqual(ev('select')[0].detail.id, 'WM-02');
       assert.strictEqual(ev('feedback')[0].detail.value, 4);
     });
-    test('T03b no events at all without a test id', () => {
+    test('T03b without a test id the log is still kept in memory (end-of-session download), participant "anonymous"', () => {
       const c = { catalog, now: makeClock() };
       let s = core.createInitialState();
       for (const a of [{ type: 'SET_CONSENT', value: true }, { type: 'START' }, { type: 'SUBMIT' }]) s = core.reduce(s, a, c);
-      assert.deepStrictEqual(s.log, []);
+      assert.deepStrictEqual(s.log.map(e => e.event), ['consent', 'submit', 'validation_error', 'validation_error', 'validation_error']);
+      assert.strictEqual(JSON.parse(core.exportLog(s)).participant, 'anonymous');
+      assert.strictEqual(core.createInitialState().test, null, 'no test badge without ?test');
     });
     test('T04 every event has an ISO timestamp and a screen', () => {
       for (const e of session('P01').s.log) {
@@ -60,7 +62,8 @@
       assert.strictEqual(j.catalogVersion, 'catalog-v1');
       assert.ok(j.startedAt && Array.isArray(j.events));
       const allowed = new Set(['given', 'valid', 'budget', 'texture', 'fragrance', 'useTime', 'size', 'revision', 'field', 'code', 'value',
-        'count', 'eligible', 'from', 'to', 'id', 'rank', 'elapsedMs', 'via', 'task']);
+        'count', 'eligible', 'from', 'to', 'id', 'rank', 'elapsedMs', 'via', 'task',
+        'clarity', 'ease', 'confidence', 'wouldUse', 'commentLength']); // comment TEXT is never in events, only in `feedback`
       const extra = j.events.flatMap(e => Object.keys(e.detail)).filter(k => !allowed.has(k));
       assert.deepStrictEqual(extra, []);
       assert.deepStrictEqual(Object.keys(j.events[0]).sort(), ['detail', 'event', 'screen', 't']);

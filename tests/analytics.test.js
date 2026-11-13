@@ -43,8 +43,8 @@
     test('analytics CSV export', () => {
       const csv = core.sessionsToCSV(core.analyseSessions([p02, p03]));
       const lines = csv.split('\r\n');
-      assert.strictEqual(lines[0], 'participant,task,completed,time_to_selection_s,saw_no_match,validation_errors,language,clarity');
-      assert.strictEqual(lines[1], 'P02,T3,true,80,true,2,kk,2');
+      assert.strictEqual(lines[0], 'participant,task,completed,time_to_selection_s,saw_no_match,validation_errors,language,clarity,ease,confidence,would_use,comments');
+      assert.strictEqual(lines[1], 'P02,T3,true,80,true,2,kk,2,,,,');
       assert.ok(lines.includes('completion_rate,0.5'));
       assert.ok(lines.includes('median_time_to_selection_s,80'));
     });

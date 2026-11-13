@@ -37,7 +37,7 @@ Each product is shown with a plain "Why:" line and a "Limitation:" line, and eve
 | `i18n/en.json`, `i18n/kk.json` | Every visible string of the app, admin and analytics pages. The two files have identical key sets. |
 | `data/catalog.v1.json` | `catalog-v1`: 12 fictional products. |
 | `data/embedded.js` | **Generated** copy of the three JSON files, used under `file://`. Do not edit. |
-| `tests/` | `run.js`, `harness.js`, and the `*.test.js` files (matching, validate, i18n, catalog, state, testlog, analytics). |
+| `tests/` | `run.js`, `harness.js`, and the `*.test.js` files (matching, validate, i18n, catalog, state, testlog, feedback, analytics). |
 | `MANUAL_TEST.md`, `CHANGELOG.md` | Manual checklist and change log. |
 
 ## Run locally
@@ -72,7 +72,7 @@ All paths are relative, so the site also works under a sub-path such as `/repo/`
 ## Tests
 
 ```bash
-node tests/run.js          # 119 checks, exit code 1 on failure (Node 16+)
+node tests/run.js          # 124 checks, exit code 1 on failure (Node 16+)
 ```
 
 Open `tests.html` to run the same files in the browser. Five checks need the file system and show as "Node only" there.
@@ -130,6 +130,26 @@ CSV columns: `id,name,price,texture,fragrance_free,size_ml,use_time,limitation_e
 
 Edits stay in memory. If you tick the clearly labelled checkbox, they are also saved to **sessionStorage for this tab only**, so `index.html` and `store.html` opened in the same tab use them and show a notice. Only catalog and rules are stored, never shopper answers.
 
+## Feedback form and session download (every user)
+
+The final screen (S3) has an **optional feedback form**. Nothing is required, but at least one answer is needed to save it. It asks:
+
+1. how clear the reason was (1–5);
+2. how easy it was to find a product (1–5);
+3. how confident the user is in the choice (1–5);
+4. whether they would use this in a real shop (yes / not sure / no);
+5. an optional comment, up to 500 characters, with a "no name or contact details" note.
+
+**Save feedback** keeps the answers in memory. The draft survives a language switch.
+
+Below the form, **Download session (JSON)** is available to **everyone**, not only in test mode:
+
+- **Filename:** `session_<timestamp>.json`, or `P01_<timestamp>.json` in test mode.
+- **Contents:** the answers, events, timings and saved feedback, with `participant: "anonymous"` when there is no `?test=`.
+- **Privacy:** every session keeps this log in memory only. It is never sent or saved, and it is gone on reload. The consent screen tells users they can download it at the end. The comment text is stored only in `feedback`, never inside the event list.
+
+Drop these files on `analytics.html`. Besides the earlier metrics, it shows mean ease, mean confidence, the "would use: yes" rate, a list of all comments, and extra CSV columns (`ease, confidence, would_use, comments`).
+
 ## Test-session mode (F9 / F18)
 
 Open `index.html?test=P01`. Only `P01`–`P99` are accepted.
@@ -145,7 +165,7 @@ Open `index.html?test=P01`. Only `P01`–`P99` are accepted.
   - `results` (count)
   - `lang_switch` (from, to)
   - `select` (id, rank, elapsedMs)
-  - `feedback` (value)
+  - `feedback_form` (clarity, ease, confidence, wouldUse, commentLength)
   - `restart` (via restart or leave)
 - **Retention:** nothing is sent anywhere. The log survives "Start again" within the tab and **is lost on reload, so download it before closing the tab.**
 
@@ -176,6 +196,7 @@ Drop the downloaded files on `analytics.html` to get completion rate, median tim
 - **Catalog grew to 12 products** at the user's request, so C01 is "12 products" and counts read "n of 12". New prices were chosen so that every M01–M18 expectation from the spec still holds against the shipped catalog. WM-11 costs 4 138 KZT so the F12 example (4137 → 4138) is visible. WM-12 is out of stock (F21).
 - **Q4/Q5 are optional.** They have a "No preference" option selected by default, because "soft" questions never exclude products.
 - **"Light scent is OK" and "Doesn't matter" behave identically**, as the spec's rule says. Only "Fragrance-free" filters, or in soft mode only re-orders.
+- **Session log for everyone:** at the user's request, every session keeps its in-memory log so anyone can download it at the end. This changes spec item X03: without `?test=` there is still no test badge or test bar, but the final screen offers the download.
 - **`t()` falls back** to English and then to the key itself, with exactly one `console.warn`, per I05. Tests guarantee no key is missing.
 - **English-only pages:** `tests.html` (developer tool) and `store.html` (stands in for a third-party shop page) are English only. All WellMatch-owned UI goes through i18n.
 - **Data marks colour:** the spec's `--muted #6B7785` is only about 4.0:1 on the background, so small text uses `#56616E`. The analytics bars use `#2F78B5`, which passes the chart palette checks; the accent `#2F6F8F` fails the chroma floor for data marks.

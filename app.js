@@ -197,6 +197,34 @@
     };
   }
 
+  // ===================================================================
+  // End-of-session feedback form (all fields optional, at least one required to save)
+  // ===================================================================
+  const FEEDBACK_FIELDS = ['clarity', 'ease', 'confidence', 'wouldUse', 'comment'];
+  const WOULD_USE = ['yes', 'unsure', 'no'];
+  const COMMENT_MAX = 500;
+
+  /** -> { ok, value:{clarity, ease, confidence, wouldUse, comment}, errors } ; codes: invalid | tooLong | empty */
+  function validateFeedback(form) {
+    const f = form || {};
+    const errors = {};
+    const value = {};
+    for (const k of ['clarity', 'ease', 'confidence']) {
+      const v = f[k];
+      if (v == null || v === '') value[k] = null;
+      else if (Number.isInteger(v) && v >= 1 && v <= 5) value[k] = v;
+      else errors[k] = 'invalid';
+    }
+    if (f.wouldUse == null || f.wouldUse === '') value.wouldUse = null;
+    else if (WOULD_USE.includes(f.wouldUse)) value.wouldUse = f.wouldUse;
+    else errors.wouldUse = 'invalid';
+    const comment = typeof f.comment === 'string' ? f.comment.trim() : '';
+    if (comment.length > COMMENT_MAX) errors.comment = 'tooLong';
+    value.comment = comment || null;
+    if (!Object.keys(errors).length && FEEDBACK_FIELDS.every(k => value[k] == null)) errors.form = 'empty';
+    return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value, errors: {} };
+  }
+
   function sameAnswers(x, y) {
     if (!x || !y) return false;
     return ANSWER_FIELDS.every(f => (x[f] == null ? null : x[f]) === (y[f] == null ? null : y[f]));
@@ -513,7 +541,10 @@
       history: [],
       compare: [],
       selected: null,
-      feedback: null,
+      feedback: null,       // clarity rating 1–5 (also set by the feedback form)
+      feedbackDraft: null,  // feedback form while it is being filled in (survives a language switch)
+      feedbackForm: null,   // last saved feedback form (exported with the session)
+      feedbackErrors: {},
       pendingLink: null, // answers from a shared #s2?… link, applied after consent
       test: o.test || null,
       task: null,
@@ -525,8 +556,8 @@
     };
   }
 
+  /** Every session keeps an in-memory log (never persisted or sent) so anyone can download it at the end. */
   function addLog(s, env, event, detail) {
-    if (!s.test) return s;
     return { ...s, log: s.log.concat([{ t: env.now(), screen: s.screen, event, detail: detail || {} }]) };
   }
 
@@ -645,7 +676,10 @@
         const selectedAt = m.selectedAt != null ? m.selectedAt : nowMs();
         const elapsedMs = m.firstInteractionAt != null ? selectedAt - m.firstInteractionAt : null;
         const s = addLog(state, env, 'select', { id: action.id, rank: idx + 1, elapsedMs });
-        return { ...s, selected: action.id, feedback: null, screen: 's3', metrics: { ...m, selectedAt } };
+        return {
+          ...s, selected: action.id, feedback: null, feedbackDraft: null, feedbackForm: null, feedbackErrors: {},
+          screen: 's3', metrics: { ...m, selectedAt }
+        };
       }
 
       case 'FEEDBACK': {
@@ -654,10 +688,30 @@
         return { ...addLog(state, env, 'feedback', { value: n, id: state.selected }), feedback: n };
       }
 
+      case 'SET_FEEDBACK_FIELD': {
+        if (state.screen !== 's3' || !FEEDBACK_FIELDS.includes(action.field)) return state;
+        const draft = { ...(state.feedbackDraft || {}), [action.field]: action.value };
+        return { ...state, feedbackDraft: draft, feedbackErrors: {} };
+      }
+
+      case 'SUBMIT_FEEDBACK': {
+        if (state.screen !== 's3') return state;
+        const v = validateFeedback(state.feedbackDraft);
+        if (!v.ok) return { ...state, feedbackErrors: v.errors };
+        const f = v.value;
+        const s = addLog(state, env, 'feedback_form', {
+          id: state.selected, clarity: f.clarity, ease: f.ease, confidence: f.confidence, wouldUse: f.wouldUse,
+          commentLength: f.comment ? f.comment.length : 0
+        });
+        return { ...s, feedbackForm: f, feedbackErrors: {}, feedback: f.clarity != null ? f.clarity : s.feedback };
+      }
+
       case 'RESTART':
       case 'LEAVE': {
         const s = addLog(state, env, 'restart', { via: type === 'LEAVE' ? 'leave' : 'restart', from: state.screen });
-        const run = state.metrics.firstInteractionAt != null ? [{ task: state.task, ...summarizeMetrics(state.metrics, nowMs()) }] : [];
+        const run = state.metrics.firstInteractionAt != null
+          ? [{ task: state.task, ...summarizeMetrics(state.metrics, nowMs()), feedback: state.feedbackForm }]
+          : [];
         return {
           ...createInitialState({ lang: s.lang, test: s.test, catalogHidden: s.catalogHidden, now: env.now }),
           log: s.log, startedAt: s.startedAt, task: s.task, runs: s.runs.concat(run)
@@ -727,7 +781,7 @@
     const m = meta || {};
     const nowIso = m.now || new Date().toISOString();
     return JSON.stringify({
-      participant: state.test,
+      participant: state.test || 'anonymous',
       appVersion: APP_VERSION,
       catalogVersion: m.catalogVersion || CATALOG_VERSION,
       startedAt: state.startedAt,
@@ -736,6 +790,7 @@
       lang: state.lang,
       catalogHidden: state.catalogHidden,
       metrics: summarizeMetrics(state.metrics, Date.parse(nowIso)),
+      feedback: state.feedbackForm,
       runs: state.runs,
       events: state.log
     }, null, 2);
@@ -762,7 +817,14 @@
       let time = null;
       if (select && select.detail && typeof select.detail.elapsedMs === 'number') time = Math.round(select.detail.elapsedMs / 100) / 10;
       else if (select && s.metrics && typeof s.metrics.elapsedSeconds === 'number') time = s.metrics.elapsedSeconds;
-      const ratings = ev.filter(e => e.event === 'feedback' && e.detail && Number.isInteger(e.detail.value)).map(e => e.detail.value);
+      const forms = ev.filter(e => e.event === 'feedback_form' && e.detail).map(e => e.detail);
+      const ints = xs => xs.filter(x => Number.isInteger(x));
+      const ratings = ints(ev.filter(e => e.event === 'feedback' && e.detail).map(e => e.detail.value).concat(forms.map(f => f.clarity)));
+      const ease = ints(forms.map(f => f.ease));
+      const confidence = ints(forms.map(f => f.confidence));
+      const would = forms.map(f => f.wouldUse).filter(x => WOULD_USE.includes(x));
+      const comments = [s.feedback].concat((s.runs || []).map(r => r && r.feedback))
+        .map(f => f && typeof f.comment === 'string' ? f.comment.trim() : '').filter(Boolean);
       return {
         participant: s.participant || null,
         task: s.task || null,
@@ -771,12 +833,17 @@
         noMatch: ev.some(e => e.event === 'results' && e.detail && e.detail.count === 0),
         errors: ev.filter(e => e.event === 'validation_error').length,
         lang: s.lang === 'kk' ? 'kk' : 'en',
-        clarity: ratings.length ? mean(ratings) : null
+        clarity: ratings.length ? mean(ratings) : null,
+        ease: ease.length ? mean(ease) : null,
+        confidence: confidence.length ? mean(confidence) : null,
+        wouldUse: would.length ? would[would.length - 1] : null,
+        comments
       };
     });
     const n = rows.length;
     const times = rows.filter(r => r.timeSec != null).map(r => r.timeSec);
     const clarities = rows.filter(r => r.clarity != null).map(r => r.clarity);
+    const answeredWould = rows.filter(r => r.wouldUse != null);
     return {
       rows,
       summary: {
@@ -786,7 +853,11 @@
         noMatchRate: n ? rows.filter(r => r.noMatch).length / n : null,
         errorsPerSession: n ? rows.reduce((a, r) => a + r.errors, 0) / n : null,
         languages: { en: rows.filter(r => r.lang === 'en').length, kk: rows.filter(r => r.lang === 'kk').length },
-        meanClarity: mean(clarities)
+        meanClarity: mean(clarities),
+        meanEase: mean(rows.filter(r => r.ease != null).map(r => r.ease)),
+        meanConfidence: mean(rows.filter(r => r.confidence != null).map(r => r.confidence)),
+        wouldUseYesRate: answeredWould.length ? answeredWould.filter(r => r.wouldUse === 'yes').length / answeredWould.length : null,
+        comments: rows.reduce((a, r) => a + r.comments.length, 0)
       }
     };
   }
@@ -796,9 +867,12 @@
     return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   function sessionsToCSV(result) {
-    const lines = [['participant', 'task', 'completed', 'time_to_selection_s', 'saw_no_match', 'validation_errors', 'language', 'clarity'].join(',')];
+    const lines = [['participant', 'task', 'completed', 'time_to_selection_s', 'saw_no_match', 'validation_errors', 'language',
+      'clarity', 'ease', 'confidence', 'would_use', 'comments'].join(',')];
+    const r2 = x => (x == null ? '' : Math.round(x * 100) / 100);
     for (const r of result.rows) {
-      lines.push([r.participant, r.task, r.completed, r.timeSec, r.noMatch, r.errors, r.lang, r.clarity == null ? '' : Math.round(r.clarity * 100) / 100].map(csvCell).join(','));
+      lines.push([r.participant, r.task, r.completed, r.timeSec, r.noMatch, r.errors, r.lang,
+        r2(r.clarity), r2(r.ease), r2(r.confidence), r.wouldUse, (r.comments || []).join(' | ')].map(csvCell).join(','));
     }
     const s = result.summary;
     const round = x => (x == null ? '' : Math.round(x * 1000) / 1000);
@@ -811,6 +885,10 @@
     lines.push(`language_en,${s.languages.en}`);
     lines.push(`language_kk,${s.languages.kk}`);
     lines.push(`mean_clarity,${round(s.meanClarity)}`);
+    lines.push(`mean_ease,${round(s.meanEase)}`);
+    lines.push(`mean_confidence,${round(s.meanConfidence)}`);
+    lines.push(`would_use_yes_rate,${round(s.wouldUseYesRate)}`);
+    lines.push(`comments,${s.comments}`);
     return lines.join('\r\n') + '\r\n';
   }
 
@@ -821,6 +899,7 @@
     normalizeRules, sizeCategory, suitsUseTime, softScore,
     match, analyse, reasons, softLimitations, liveCount,
     validateBudget, validateAnswers, sameAnswers, toRawAnswers,
+    validateFeedback, FEEDBACK_FIELDS, WOULD_USE, COMMENT_MAX,
     productProblems, validateRecords, loadCatalog, parseCSV, csvToProducts, importCatalog, CSV_REQUIRED, CSV_OPTIONAL,
     formatNumber, formatMoney, interpolate, pluralCategory, kkPossessive, createI18n,
     parseHash, serialiseHash, hashForState, parseTestId,

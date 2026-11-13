@@ -51,6 +51,12 @@ From v1.1 on, every change must link to evidence from the user tests: a particip
   - text contrast at least 4.5:1 and targets at least 44 px;
   - no horizontal scroll at 320 px, and reduced motion respected.
 
+- End-of-session feedback form (all optional):
+  - three 1–5 scales: clarity, ease, confidence;
+  - "would use in a real shop?";
+  - a comment of up to 500 characters.
+- **Download session (JSON)** for every user on the final screen. The log is in memory only; outside test mode the file is labelled `participant: "anonymous"`.
+
 **Integration and tools**
 - `wellmatch.js` widget: full-page, floating (one-line embed in `store.html`, which scrolls to and highlights the shop tile), and inline (admin preview).
 - Retailer view `admin.html`:
@@ -70,4 +76,4 @@ From v1.1 on, every change must link to evidence from the user tests: a particip
 **Data and tests**
 - `catalog-v1`: 12 fictional products with `use_time` and `in_stock`. Kazakh text is a draft pending native review.
 - Catalog integrity check on load. Incomplete or duplicate records are withheld and reported.
-- `node tests/run.js`: 119 checks across matching, validate, i18n, catalog, state, testlog and analytics.
+- `node tests/run.js`: 124 checks across matching, validate, i18n, catalog, state, testlog, feedback and analytics.

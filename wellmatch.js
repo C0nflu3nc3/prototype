@@ -667,29 +667,105 @@
       if (!floating) return null;
       return [...document.querySelectorAll('[data-wm-id]')].find(x => x.getAttribute('data-wm-id') === id && !el.root.contains(x)) || null;
     }
+    // ----- S3 feedback form (all optional; saved into the in-memory session and the JSON download) -----
+    function draftValue(field) {
+      return state.feedbackDraft && state.feedbackDraft[field] != null ? state.feedbackDraft[field] : null;
+    }
+    function setFeedbackField(field, value) {
+      dispatch({ type: 'SET_FEEDBACK_FIELD', field, value }, { render: false });
+      const err = document.getElementById(P + 'fb-error');
+      if (err) { err.hidden = true; err.textContent = ''; }
+      const st = document.getElementById(P + 'fb-status');
+      if (st) st.textContent = '';
+      const ta = document.getElementById(P + 'fb-comment');
+      if (ta) ta.removeAttribute('aria-invalid');
+    }
+    function feedbackSaved() {
+      if (!state.feedbackForm) return false;
+      const v = core.validateFeedback(state.feedbackDraft);
+      return v.ok && JSON.stringify(v.value) === JSON.stringify(state.feedbackForm);
+    }
+    function scaleGroup(field, legendKey, scaleKey) {
+      const row = h('div', { class: 'wm-scale' });
+      for (let v = 1; v <= 5; v++) {
+        const rid = P + 'fb-' + field + '-' + v;
+        row.append(h('div', { class: 'wm-choice' }, [
+          h('input', {
+            type: 'radio', name: P + 'fb-' + field, id: rid, value: String(v), checked: draftValue(field) === v,
+            'aria-describedby': P + 'fb-' + field + '-scale', onchange: () => setFeedbackField(field, v)
+          }),
+          h('label', { for: rid, text: String(v) })
+        ]));
+      }
+      return h('fieldset', { class: 'wm-field', id: P + 'fb-' + field + '-group' }, [
+        h('legend', { text: t(legendKey) }),
+        h('p', { class: 'wm-hint', id: P + 'fb-' + field + '-scale', text: t(scaleKey) }),
+        row
+      ]);
+    }
+    function feedbackForm() {
+      const errs = state.feedbackErrors || {};
+      const errText = errs.comment ? t('feedback.error.tooLong') : errs.form ? t('feedback.error.empty') : '';
+      const comment = h('textarea', {
+        class: 'wm-input wm-textarea', id: P + 'fb-comment', rows: '4', maxlength: String(core.COMMENT_MAX),
+        'aria-describedby': P + 'fb-comment-hint ' + P + 'fb-comment-count' + (errs.comment ? ' ' + P + 'fb-error' : ''),
+        'aria-invalid': errs.comment ? 'true' : null,
+        oninput: e => {
+          setFeedbackField('comment', e.target.value);
+          document.getElementById(P + 'fb-comment-count').textContent = t('feedback.comment.count', { n: e.target.value.length });
+        }
+      });
+      comment.value = draftValue('comment') || '';
+      const would = h('div', { class: 'wm-choices' }, core.WOULD_USE.map(o => {
+        const rid = P + 'fb-wouldUse-' + o;
+        return h('div', { class: 'wm-choice' }, [
+          h('input', { type: 'radio', name: P + 'fb-wouldUse', id: rid, value: o, checked: draftValue('wouldUse') === o, onchange: () => setFeedbackField('wouldUse', o) }),
+          h('label', { for: rid, text: t('feedback.wouldUse.' + o) })
+        ]);
+      }));
+      return h('form', {
+        class: 'wm-feedback', id: P + 'fb-form', novalidate: true, 'aria-labelledby': P + 'fb-title',
+        onsubmit: e => {
+          e.preventDefault();
+          dispatch({ type: 'SUBMIT_FEEDBACK' });
+          const target = document.getElementById(P + (Object.keys(state.feedbackErrors).length ? (state.feedbackErrors.comment ? 'fb-comment' : 'fb-error') : 'fb-status'));
+          if (target) target.focus();
+        }
+      }, [
+        h(H.sub, { id: P + 'fb-title', text: t('feedback.title') }),
+        scaleGroup('clarity', 'feedback.label', 'feedback.scale'),
+        scaleGroup('ease', 'feedback.ease', 'feedback.ease.scale'),
+        scaleGroup('confidence', 'feedback.confidence', 'feedback.confidence.scale'),
+        h('fieldset', { class: 'wm-field', id: P + 'fb-wouldUse-group' }, [h('legend', { text: t('feedback.wouldUse') }), would]),
+        h('div', { class: 'wm-field' }, [
+          h('label', { for: P + 'fb-comment', text: t('feedback.comment') }),
+          h('p', { class: 'wm-hint', id: P + 'fb-comment-hint', text: t('feedback.comment.hint') }),
+          comment,
+          h('p', { class: 'wm-hint wm-count-hint', id: P + 'fb-comment-count', text: t('feedback.comment.count', { n: comment.value.length }) })
+        ]),
+        h('p', { class: 'wm-error', id: P + 'fb-error', tabindex: '-1', hidden: !errText, text: errText }),
+        h('button', { type: 'submit', class: 'wm-btn wm-btn-secondary', id: P + 'fb-save', text: t('btn.saveFeedback') }),
+        h('p', { class: 'wm-rating-status', id: P + 'fb-status', role: 'status', tabindex: '-1', text: feedbackSaved() ? t('feedback.saved') : '' })
+      ]);
+    }
+    function downloadBlock() {
+      return h('div', { class: 'wm-download', role: 'group', 'aria-labelledby': P + 'dl-title' }, [
+        h(H.sub, { id: P + 'dl-title', text: t('download.title') }),
+        h('p', { class: 'wm-hint', id: P + 'dl-hint', text: t('download.hint') }),
+        h('button', { type: 'button', class: 'wm-btn wm-btn-secondary', id: P + 'download-session', 'aria-describedby': P + 'dl-hint', text: t('btn.downloadSession'), onclick: downloadLog })
+      ]);
+    }
+
     function screenSelected() {
       const p = state.results.find(x => x.id === state.selected);
-      const buttons = [1, 2, 3, 4, 5].map(v => h('button', {
-        type: 'button', class: 'wm-btn wm-btn-secondary', id: P + 'rate-' + v, 'aria-pressed': String(state.feedback === v),
-        'aria-label': t('feedback.option', { n: v }), text: String(v),
-        onclick: () => {
-          dispatch({ type: 'FEEDBACK', value: v }, { render: false });
-          buttons.forEach((b, k) => b.setAttribute('aria-pressed', String(k + 1 === state.feedback)));
-          document.getElementById(P + 'rating-status').textContent = t('feedback.thanks', { n: state.feedback });
-        }
-      }));
       const tile = hostTile(p.id);
       return [
         progress(3),
         heading(t('selected.title', { name: p.name })),
         h('p', { class: 'wm-meta' }, [h('span', { class: 'wm-price', text: money(p.price) }), ' · ', ml(p.size_ml)]),
         h('p', { class: 'wm-disclaimer', text: t('selected.body') }),
-        h('div', { class: 'wm-rating', role: 'group', 'aria-labelledby': P + 'rating-label', 'aria-describedby': P + 'rating-scale' }, [
-          h('p', { class: 'wm-rating-label', id: P + 'rating-label', text: t('feedback.label') }),
-          h('p', { class: 'wm-hint', id: P + 'rating-scale', text: t('feedback.scale') }),
-          h('div', { class: 'wm-rating-buttons' }, buttons),
-          h('p', { class: 'wm-rating-status', id: P + 'rating-status', role: 'status', text: state.feedback ? t('feedback.thanks', { n: state.feedback }) : '' })
-        ]),
+        feedbackForm(),
+        downloadBlock(),
         h('div', { class: 'wm-actions' }, [
           tile ? h('button', {
             type: 'button', class: 'wm-btn wm-btn-secondary', id: P + 'show-in-shop', text: t('btn.showInShop'),
@@ -744,7 +820,7 @@
       const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
       const blob = new Blob([core.exportLog(state, { catalogVersion: rt.rules.catalogVersion, now: now.toISOString() })], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = h('a', { href: url, download: `${state.test}_${stamp}.json`, hidden: true });
+      const a = h('a', { href: url, download: `${state.test || 'session'}_${stamp}.json`, hidden: true });
       document.body.append(a);
       a.click();
       a.remove();

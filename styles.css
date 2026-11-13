@@ -217,6 +217,17 @@ body.wm-body { margin: 0; background: var(--wm-bg); -webkit-text-size-adjust: 10
 .wm-rating-buttons .wm-btn { min-width: 48px; }
 .wm-rating-buttons .wm-btn[aria-pressed="true"] { background: var(--wm-accent); color: #fff; }
 .wm-rating-status { margin-top: var(--wm-sp-1) !important; color: var(--wm-reason); font-weight: 600; min-height: 1.5em; }
+.wm-rating-status:focus, .wm-error:focus { outline: none; }
+.wm-feedback, .wm-download {
+  margin-top: var(--wm-sp-3); padding: var(--wm-sp-2);
+  background: var(--wm-surface); border: 1px solid var(--wm-line); border-radius: var(--wm-r-card);
+}
+.wm-scale { display: flex; flex-wrap: wrap; gap: var(--wm-sp-1); }
+.wm-scale .wm-choice { flex: 0 0 52px; }
+.wm-textarea { max-width: none; min-height: 6em; resize: vertical; line-height: 1.4; }
+.wm-textarea[aria-invalid="true"] { border: 2px solid var(--wm-error); }
+.wm-count-hint { margin-top: 4px !important; font-variant-numeric: tabular-nums; }
+.wm-feedback > .wm-error { margin-bottom: var(--wm-sp-1) !important; }
 
 /* ---------- Footer ---------- */
 .wm-footer { border-top: 1px solid var(--wm-line); background: var(--wm-surface); font-size: 0.875rem; color: var(--wm-muted-ink); padding: var(--wm-sp-2) 0; }

@@ -48,7 +48,10 @@ Use a fresh tab for each journey, because a reload resets the app.
 |---|---|---|---|---|---|---|
 | X01 | Open `index.html?test=P01` | The "Test session P01" badge, Task dropdown, metrics and **Download session log** button appear. `?test=<script>` shows no badge. | | | | |
 | X02 | Choose task T1 and run B01, B02 and B03, then download | `P01_<timestamp>.json` contains `task`, `validation_error` (with field), `submit`, `results` with `count: 0`, and the metrics. Dropping it on `analytics.html` shows a "Saw no-match" value of Yes. | | | | |
-| X03 | Open `index.html` without `?test` | No badge, no button and no logging. | | | | |
+| X03 | Open `index.html` without `?test` | No test badge and no test bar. (Changed: the final screen still offers **Download session (JSON)**, saved as `session_<timestamp>.json` with `participant: "anonymous"`.) | | | | |
+| X05 | On S3, press **Save feedback** without answering | The "answer at least one question" error shows and receives focus, and nothing is saved. | | | | |
+| X06 | On S3, answer all five feedback items (use the arrow keys on the 1–5 scales), switch language mid-comment, then press **Save feedback** | Everything you entered is kept after the language switch. The confirmation is announced, and the counter shows "n / 500". | | | | |
+| X07 | Then choose **Download session (JSON)** and drop the file on `analytics.html` | The JSON has `feedback` with the comment. Analytics shows the ease, confidence and would-use tiles, the table columns and the comment. | | | | |
 | X04 | In test mode, answer, wait, then Select | The timer runs from the first answer and **stops** at Select. | | | | |
 
 ## Integration and retailer (F16, F17, F21)

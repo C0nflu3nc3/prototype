@@ -134,8 +134,13 @@
       ['analytics.m.noMatch', pct(s.noMatchRate)],
       ['analytics.m.errors', num(s.errorsPerSession, 2)],
       ['analytics.m.lang', s.languages.en + ' / ' + s.languages.kk],
-      ['analytics.m.clarity', num(s.meanClarity, 2)]
+      ['analytics.m.clarity', num(s.meanClarity, 2)],
+      ['analytics.m.ease', num(s.meanEase, 2)],
+      ['analytics.m.confidence', num(s.meanConfidence, 2)],
+      ['analytics.m.wouldUse', pct(s.wouldUseYesRate)]
     ];
+    const who = r => (r.participant === 'anonymous' ? t('analytics.anonymous') : r.participant || t('analytics.na'));
+    const comments = res.rows.flatMap(r => r.comments.map(c => ({ who: who(r), text: c })));
     const yes = b => t(b ? 'analytics.yes' : 'analytics.no');
     const content = res.rows.length ? [
       h('section', { class: 'pg-section', 'aria-labelledby': 'an-sum-h' }, [
@@ -149,19 +154,28 @@
       h('section', { class: 'pg-section', 'aria-labelledby': 'an-rows-h' }, [
         h('h2', { id: 'an-rows-h', text: t('analytics.perSession') }),
         h('div', { class: 'pg-table-wrap' }, [h('table', { class: 'pg-table', id: 'an-table' }, [
-          h('thead', {}, [h('tr', {}, ['participant', 'task', 'completed', 'time', 'noMatch', 'errors', 'lang', 'clarity']
-            .map(k => h('th', { scope: 'col', class: ['time', 'errors', 'clarity'].includes(k) ? 'pg-num' : null, text: t('analytics.col.' + k) })))]),
+          h('thead', {}, [h('tr', {}, ['participant', 'task', 'completed', 'time', 'noMatch', 'errors', 'lang', 'clarity', 'ease', 'confidence', 'wouldUse']
+            .map(k => h('th', { scope: 'col', class: ['time', 'errors', 'clarity', 'ease', 'confidence'].includes(k) ? 'pg-num' : null, text: t('analytics.col.' + k) })))]),
           h('tbody', {}, res.rows.map(r => h('tr', {}, [
-            h('th', { scope: 'row', text: r.participant || t('analytics.na') }),
+            h('th', { scope: 'row', text: who(r) }),
             h('td', { text: r.task || t('analytics.na') }),
             h('td', { text: yes(r.completed) }),
             h('td', { class: 'pg-num', text: r.timeSec == null ? t('analytics.na') : num(r.timeSec, 1) }),
             h('td', { text: yes(r.noMatch) }),
             h('td', { class: 'pg-num', text: String(r.errors) }),
             h('td', { text: t('lang.' + r.lang) }),
-            h('td', { class: 'pg-num', text: num(r.clarity, 2) })
+            h('td', { class: 'pg-num', text: num(r.clarity, 2) }),
+            h('td', { class: 'pg-num', text: num(r.ease, 2) }),
+            h('td', { class: 'pg-num', text: num(r.confidence, 2) }),
+            h('td', { text: r.wouldUse ? t('feedback.wouldUse.' + r.wouldUse) : t('analytics.na') })
           ])))
         ])])
+      ]),
+      h('section', { class: 'pg-section', 'aria-labelledby': 'an-com-h' }, [
+        h('h2', { id: 'an-com-h', text: t('analytics.comments', { n: comments.length }) }),
+        comments.length
+          ? h('ul', { id: 'an-comments' }, comments.map(c => h('li', {}, [h('strong', { text: c.who + ': ' }), c.text])))
+          : h('p', { text: t('analytics.comments.none') })
       ])
     ] : [];
 

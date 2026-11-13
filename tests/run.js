@@ -28,7 +28,7 @@ if (process.argv.includes('--sync')) {
   console.log('data/embedded.js regenerated.');
 }
 
-const FILES = ['matching', 'validate', 'i18n', 'catalog', 'state', 'testlog', 'analytics'];
+const FILES = ['matching', 'validate', 'i18n', 'catalog', 'state', 'testlog', 'feedback', 'analytics'];
 for (const f of FILES) require(`./${f}.test.js`);
 
 const results = harness.runAll({ core, data, node: true, read, embeddedSource });
