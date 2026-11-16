@@ -1,5 +1,5 @@
 /*
- * WellMatch v1.0 — PURE CORE (no DOM). Vanilla ES2020, no dependencies.
+ * WellMatch v1.1 — PURE CORE (no DOM). Vanilla ES2020, no dependencies.
  * Used by: wellmatch.js (widget UI), admin.js, analytics.js, tests (Node and browser).
  * Exposed as `module.exports` in Node and `window.WellMatchCore` in browsers.
  */
@@ -9,7 +9,9 @@
   // ===================================================================
   // Constants & rules
   // ===================================================================
-  const APP_VERSION = 'v1.0';
+  const APP_VERSION = 'v1.1';
+  // v1.1 C2: the exclusion list opens by itself when the shopper sees 0 or 1 product.
+  const whyNotAutoOpen = eligibleCount => eligibleCount <= 1;
   const CATALOG_VERSION = 'catalog-v1';
   const MAX_BUDGET = 1000000;
   const LANGS = ['en', 'kk'];
@@ -894,7 +896,7 @@
 
   // ===================================================================
   const core = {
-    APP_VERSION, CATALOG_VERSION, MAX_BUDGET, LANGS, TEXTURES, FRAGRANCES, USE_TIMES, SIZES, SCREENS, ANSWER_FIELDS,
+    APP_VERSION, whyNotAutoOpen, CATALOG_VERSION, MAX_BUDGET, LANGS, TEXTURES, FRAGRANCES, USE_TIMES, SIZES, SCREENS, ANSWER_FIELDS,
     TASKS, HISTORY_MAX, DEFAULT_RULES, TRAVEL_MAX_ML, STANDARD_MAX_ML,
     normalizeRules, sizeCategory, suitsUseTime, softScore,
     match, analyse, reasons, softLimitations, liveCount,

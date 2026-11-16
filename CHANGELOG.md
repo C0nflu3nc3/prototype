@@ -2,28 +2,32 @@
 
 From v1.1 on, every change must link to evidence from the user tests: a participant ID, a logged event, or an observation.
 
-## v1.1 — evidence-linked changes (not started)
+## v1.1 — evidence-linked changes (2026-11-16)
 
-### C1
-- **Evidence:** _participant ID(s) + log event / quote, e.g. "P02, P04: `validation_error` budget `notNumber` value `6.000`"_
-- **Problem:** _…_
-- **Change:** _…_
-- **Files:** _…_
-- **Test / check added:** _…_
+Source: five user-test runs on v1.0, 15 Nov 2026 (session logs `session_20261115T181317Z` … `182018Z`). Three of five participants asked for features that already existed, so each change makes an existing feature visible. No matching rule changed.
 
-### C2
-- **Evidence:** _…_
-- **Problem:** _…_
-- **Change:** _…_
-- **Files:** _…_
-- **Test / check added:** _…_
+### C1 — language choice on the start screen
+- **Evidence:** P04 commented that Kazakh would be easier and asked for a translation; the log has no `lang_switch` event.
+- **Problem:** the `EN | KZ` header switch was not recognised as a language control.
+- **Change:** the start screen opens with a "Choose your language · Тілді таңдаңыз" block with two full-name buttons; the header and dialog switches now read `English | Қазақша` instead of `EN | KZ`.
+- **Files:** `wellmatch.js` (`screenConsent`), `i18n/en.json`, `i18n/kk.json` (`lang.en`, `lang.kk`, `lang.choose`), `styles.css`.
+- **Test / check added:** `I04b` (strings in both languages); browser replay at 900 px and 320 px, no horizontal scroll.
 
-### C3
-- **Evidence:** _…_
-- **Problem:** _…_
-- **Change:** _…_
-- **Files:** _…_
-- **Test / check added:** _…_
+### C2 — exclusion reasons visible; "Adjust answers" on no-match
+- **Evidence:** P05 asked for a button showing why other products did not fit; P02 found a single result strange; P03 reached the no-match screen and chose "Leave" after about 7 s. None opened "Why not the others?".
+- **Problem:** the exclusion list sat collapsed below the comparison and history blocks; on the no-match screen "Leave" had the same weight as "Change answers".
+- **Change:** the expander is renamed "Why weren't other products shown? (n)", outlined, moved directly under the product cards, and opens by itself when 0 or 1 product is eligible (`core.whyNotAutoOpen`). On the no-match screen the primary action is "Adjust answers", placed above the list; "Leave" becomes a text link below.
+- **Files:** `app.js` (`whyNotAutoOpen`), `wellmatch.js` (`details`, `whyNotExpander`, `screenResults`, `screenNoMatch`), `i18n/*.json` (`whynot.title`, `btn.adjust`), `styles.css`.
+- **Test / check added:** `I04c` (auto-open rule for 0, 1, 2 eligible); browser replay of the P02 and P03 answer sets.
+
+### C3 — compare prompt and counter
+- **Evidence:** P01 commented that a way to compare products was missing; the "Compare" checkboxes were on screen but were not noticed (observer note).
+- **Problem:** the "Compare" checkboxes were not noticed and the hint appeared only below the cards.
+- **Change:** a "Compare two products." prompt with a live "n of 2 selected" counter sits above the cards whenever two or more products are shown.
+- **Files:** `wellmatch.js` (`comparePrompt`, `compareBlock`, `screenResults`), `i18n/*.json` (`compare.prompt`, `compare.count`), `styles.css`.
+- **Test / check added:** `I04b` (counter string); browser replay of the P01 answer set: counter 0 → 1 → 2 and the side-by-side table appears.
+
+**Verification:** `node tests/run.js` → 126 passed, 0 failed. Participant retests of the same tasks are entered in the Evidence Portfolio (Table 7) as they are run.
 
 ## v1.0 — frozen assessment build (2026-11-13)
 

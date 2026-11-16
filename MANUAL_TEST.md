@@ -1,4 +1,4 @@
-# WellMatch v1.0 — manual test checklist (spec 5.7)
+# WellMatch v1.1 — manual test checklist (spec 5.7)
 
 **Before starting**, run `node tests/run.js` (all must pass) and open `tests.html` (0 failed). Fill in one row per item, with the date, browser and device, tester, and the result: ✓, ✗, or a note.
 
@@ -69,7 +69,7 @@ Use a fresh tab for each journey, because a reload resets the app.
 
 | # | Check | Expected | Date | Browser | Tester | Result |
 |---|---|---|---|---|---|---|
-| R01 | Footer on every screen | It shows "App v1.0 · catalog-v1" and the fictional-data notice. | | | | |
+| R01 | Footer on every screen | It shows "App v1.1 · catalog-v1" and the fictional-data notice. | | | | |
 | R02 | Double-click `index.html` (file://) **and** open the hosted URL | Both work identically. | | | | |
 | R03 | Open on a second device and in a second browser | Both work. | | | | |
 | R04 | Backup screen recording (EN + KZ + one boundary case, at most 3 min) | It is saved and plays. | | | | |

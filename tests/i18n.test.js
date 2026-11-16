@@ -17,6 +17,23 @@
       const bad = Object.keys(en).filter(k => k in kk && names(en[k]).join() !== names(kk[k]).join());
       assert.deepStrictEqual(bad, []);
     });
+    test('I04b v1.1 strings for C1-C3 exist in both languages', () => {
+      const i = core.createI18n({ en, kk }, { warn() {} });
+      assert.strictEqual(i.t('lang.en'), 'English');
+      assert.strictEqual(i.t('lang.kk'), 'Қазақша');
+      assert.ok(en['lang.choose'].includes('Тілді таңдаңыз') && kk['lang.choose'].includes('Choose your language'), 'C1 label is bilingual');
+      assert.strictEqual(i.t('compare.count', { n: 1 }), '1 of 2 selected');
+      assert.strictEqual(i.t('btn.adjust'), 'Adjust answers');
+      i.setLang('kk');
+      assert.strictEqual(i.t('compare.count', { n: 1 }), '2-ден 1 таңдалды');
+      assert.ok(i.t('whynot.title', { n: 11 }).includes('(11)'));
+    });
+    test('I04c v1.1 C2 exclusion list opens by itself for 0 or 1 eligible products only', () => {
+      assert.strictEqual(core.whyNotAutoOpen(0), true);
+      assert.strictEqual(core.whyNotAutoOpen(1), true);
+      assert.strictEqual(core.whyNotAutoOpen(2), false);
+      assert.strictEqual(core.APP_VERSION, 'v1.1');
+    });
     test('I04 plural count line in both languages', () => {
       const i = core.createI18n({ en, kk }, { warn() {} });
       assert.strictEqual(i.t('results.count', { n: 1, total: 6 }), '1 of 6 products match');

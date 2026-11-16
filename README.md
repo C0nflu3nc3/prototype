@@ -1,4 +1,4 @@
-# WellMatch v1.0
+# WellMatch v1.1
 
 A bilingual (English / Kazakh) prototype that recommends moisturisers from a **fictional** 12-product catalog. The shopper answers five questions:
 

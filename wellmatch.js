@@ -149,7 +149,7 @@
       hidden: cfg.hidden || [],
       rules: core.normalizeRules(cfg.rules),
       override: !!cfg.override,
-      open: { how: false, why: false, history: false },
+      open: { how: false, why: false, history: false }, openSig: {},
       scopeOpener: null,
       liveTimer: null,
       ticker: null,
@@ -376,7 +376,17 @@
         onchange: e => { dispatch({ type: 'SET_CONSENT', value: e.target.checked }, { render: false }); start.disabled = !state.consent; },
         onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); cb.click(); } }
       });
+      // v1.1 C1 (P04): ask for the language before anything else, with full language names.
+      const langPick = h('div', { class: 'wm-langpick', role: 'group', 'aria-label': t('lang.choose') }, [
+        h('p', { class: 'wm-langpick-label', text: t('lang.choose') }),
+        h('div', { class: 'wm-langpick-btns' }, core.LANGS.map(l => h('button', {
+          type: 'button', class: 'wm-btn ' + (state.lang === l ? 'wm-btn-primary' : 'wm-btn-secondary'), id: P + 'pick-' + l, lang: l,
+          'aria-pressed': String(state.lang === l), text: t('lang.' + l + '.name'),
+          onclick: () => dispatch({ type: 'SET_LANG', lang: l })
+        })))
+      ]);
       return [
+        langPick,
         heading(t('consent.title')),
         h('p', { class: 'wm-lead', text: t('consent.intro') }),
         h('ul', { class: 'wm-list' }, ['consent.p1', 'consent.p2', 'consent.p3', 'consent.p4'].map(k => h('li', { text: t(k) }))),
@@ -508,8 +518,15 @@
         an.softApplied ? t('results.how.soft', { prefs, max: an.max, n: an.shown.length }) : t('results.how.order', { max: an.max, n: an.shown.length })
       ];
     }
-    function details(key, summaryText, body) {
-      const d = h('details', { class: 'wm-details', id: P + key, open: rt.open[key] }, [h('summary', { text: summaryText })].concat(body));
+    function details(key, summaryText, body, opts) {
+      const o = opts || {};
+      // An auto-open default applies per answer set; a manual toggle is remembered only for that answer set.
+      const sig = JSON.stringify(state.submitted || null);
+      const fresh = o.open != null && rt.openSig[key] !== sig;
+      const open = fresh ? !!o.open : !!rt.open[key];
+      rt.openSig[key] = sig;
+      rt.open[key] = open;
+      const d = h('details', { class: 'wm-details' + (o.strong ? ' wm-details-strong' : ''), id: P + key, open }, [h('summary', { text: summaryText })].concat(body));
       d.addEventListener('toggle', () => { rt.open[key] = d.open; });
       return d;
     }
@@ -529,7 +546,8 @@
           text: t('whynot.item', { id: e.product.id, name: e.product.name, reasons: e.reasons.map(whyNotReason).join('; ') })
         })))
         : h('p', { class: 'wm-hint', text: t('whynot.none') });
-      return details('why', t('whynot.title', { n: an.excluded.length }), [body]);
+      // v1.1 C2 (P02, P03, P05): styled as a button; opens by itself when 0 or 1 product is shown.
+      return details('why', t('whynot.title', { n: an.excluded.length }), [body], { strong: true, open: core.whyNotAutoOpen(an.eligible.length) });
     }
     function revisionText(rev) {
       const changes = rev.changes.map(c => t('revision.field', { field: t('field.' + c.field), from: valueLabel(c.field, c.from), to: valueLabel(c.field, c.to) })).join(', ');
@@ -586,9 +604,17 @@
         ])
       ]);
     }
+    // v1.1 C3 (P01): say that comparison exists before the cards, and count the ticks.
+    function comparePrompt() {
+      if (state.results.length < 2) return null;
+      return h('p', { class: 'wm-compare-prompt', id: P + 'compare-prompt' }, [
+        h('strong', { text: t('compare.prompt') }), ' ', t('compare.hint'), ' ',
+        h('span', { class: 'wm-compare-count', id: P + 'compare-count', text: t('compare.count', { n: state.compare.length }) })
+      ]);
+    }
     function compareBlock(a) {
       if (state.results.length < 2) return null;
-      if (state.compare.length < 2) return h('p', { class: 'wm-hint wm-compare-hint', text: t('compare.hint') });
+      if (state.compare.length < 2) return null;
       const [x, y] = state.compare.map(id => state.results.find(p => p.id === id));
       const ff = p => t(p.fragrance_free ? 'compare.ff.yes' : 'compare.ff.no');
       const rows = [
@@ -628,10 +654,11 @@
           h('button', { type: 'button', class: 'wm-link', id: P + 'change', text: t('results.changeLink'), onclick: () => dispatch({ type: 'CHANGE' }) })
         ]),
         count,
+        comparePrompt(),
         h('ul', { class: 'wm-cards' }, state.results.map((p, idx) => productCard(p, a, idx))),
         compareBlock(a),
-        howExpander(a, an),
         whyNotExpander(an),
+        howExpander(a, an),
         historyBlock(),
         h('p', { class: 'wm-note', text: t('results.note') }),
         printBlock(a, an),
@@ -651,12 +678,15 @@
           h('p', { class: 'wm-strong', text: t('nomatch.body', { budget: money(a.budget), texture: t('texture.' + a.texture), fragrance: t('fragrance.' + a.fragrance), total: an.total }) }),
           h('p', { text: t('nomatch.hint') })
         ]),
-        howExpander(a, an),
-        whyNotExpander(an),
-        historyBlock(),
+        // v1.1 C2 (P03): the way forward comes first; leaving is still possible but no longer equal in weight.
         h('div', { class: 'wm-actions' }, [
-          h('button', { type: 'button', class: 'wm-btn wm-btn-primary', id: P + 'change', text: t('btn.change'), onclick: () => dispatch({ type: 'CHANGE' }) }),
-          h('button', { type: 'button', class: 'wm-btn wm-btn-secondary', id: P + 'leave', text: t('btn.leave'), onclick: () => dispatch({ type: 'LEAVE' }) })
+          h('button', { type: 'button', class: 'wm-btn wm-btn-primary', id: P + 'change', text: t('btn.adjust'), onclick: () => dispatch({ type: 'CHANGE' }) })
+        ]),
+        whyNotExpander(an),
+        howExpander(a, an),
+        historyBlock(),
+        h('p', { class: 'wm-leave-row' }, [
+          h('button', { type: 'button', class: 'wm-link', id: P + 'leave', text: t('btn.leave'), onclick: () => dispatch({ type: 'LEAVE' }) })
         ]),
         scopeLink()
       ];
@@ -903,7 +933,7 @@
     window.WellMatch.instance = instance;
   }
 
-  window.WellMatch = { version: 'v1.0', load, create, highlightTile, base: BASE, h, OVERRIDE_KEY };
+  window.WellMatch = { version: 'v1.1', load, create, highlightTile, base: BASE, h, OVERRIDE_KEY };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', autoBoot);
   else autoBoot();
 })();

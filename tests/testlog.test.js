@@ -58,7 +58,7 @@
       const { s } = session('P05');
       const j = JSON.parse(core.exportLog(s, { now: '2026-11-13T10:01:00.000Z' }));
       assert.strictEqual(j.participant, 'P05');
-      assert.strictEqual(j.appVersion, 'v1.0');
+      assert.strictEqual(j.appVersion, 'v1.1');
       assert.strictEqual(j.catalogVersion, 'catalog-v1');
       assert.ok(j.startedAt && Array.isArray(j.events));
       const allowed = new Set(['given', 'valid', 'budget', 'texture', 'fragrance', 'useTime', 'size', 'revision', 'field', 'code', 'value',
